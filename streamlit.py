@@ -4,144 +4,203 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-# Hiding Streamlit's default menu and footer
-hide_streamlit_style = """
-<style>
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-</style>
-"""
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+# Set page config
+st.set_page_config(page_title="Potato Disease Classifier", layout="wide")
 
-st.title('Potato Leaf Disease Prediction')
+# Custom CSS
+st.markdown("""
+    <style>
+    .stApp {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    .stButton>button {
+        background-color: #0d6efd;
+        color: white;
+    }
+    .result-container {
+        background-color: #ffc107;
+        padding: 20px;
+        border-radius: 5px;
+    }
+    .result-header {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+    .footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: #f8f9fa;
+        color: #6c757d;
+        text-align: center;
+        padding: 10px 0;
+        font-size: 14px;
+    }
+    .footer p {
+        margin: 0;
+        padding: 0;
+        line-height: 1.5;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-
-def main():
-    file_uploaded = st.file_uploader('Choose an image...', type='jpg')
-    if file_uploaded is not None:
-        image = Image.open(file_uploaded)
-        st.write("Uploaded Image.")
-        figure = plt.figure()
-        plt.imshow(image)
-        plt.axis('off')
-        st.pyplot(figure)
-        result, confidence = predict_class(image)
-        st.write('Prediction : {}'.format(result))
-        st.write('Confidence : {}%'.format(confidence))
+# Hide Streamlit's default menu and footer
+st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    </style>
+""", unsafe_allow_html=True)
 
 
 def predict_class(image):
-    with st.spinner('Loading Model...'):
-        classifier_model = tf.keras.models.load_model('model_v1.h5', compile=False)
-
-    # Preprocess the image to match the model's input shape
-    test_image = image.resize((128, 128))  # Ensure this matches the original model's input size
+    classifier_model = tf.keras.models.load_model('model_v1.h5', compile=False)
+    test_image = image.resize((128, 128))
     test_image = tf.keras.preprocessing.image.img_to_array(test_image)
     test_image = np.expand_dims(test_image, axis=0)
-
     class_names = ['Early_blight', 'Healthy', 'Late_blight']
-
     prediction = classifier_model.predict(test_image)
-    confidence = round(100 * (np.max(prediction[0])), 2)
-    final_pred = class_names[np.argmax(prediction)]
-    return final_pred, confidence
+    return prediction[0]
 
 
-footer = """
-<style>
-a:link , a:visited{
-    color: white;
-    background-color: transparent;
-    text-decoration: None;
-}
-a:hover,  a:active {
-    color: red;
-    background-color: transparent;
-    text-decoration: None;
-}
-.footer {
-    position: fixed;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    background-color: transparent;
-    color: black;
-    text-align: center;
-}
-</style>
-<div class="footer">
-    <p>Enjoy the prediction and thanks for using.</p>
-    <p>Thanks and Regards,</p>
-    <p>Sourav</p>
-</div>
-"""
-st.markdown(footer, unsafe_allow_html=True)
+def main():
+    st.title("Potato Disease Classifier")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+        if uploaded_file is not None:
+            image = Image.open(uploaded_file)
+            st.image(image, caption="Uploaded Image", use_column_width=True)
+
+            if st.button("Predict"):
+                prediction = predict_class(image)
+                class_names = ['Early_blight', 'Healthy', 'Late_blight']
+                result = class_names[np.argmax(prediction)]
+                confidence = round(100 * np.max(prediction), 2)
+
+                with col2:
+                    st.markdown('<div class="result-container">', unsafe_allow_html=True)
+                    st.markdown(f'<p class="result-header">Result: {result}</p>', unsafe_allow_html=True)
+
+                    # Plot prediction probabilities
+                    fig, ax = plt.subplots()
+                    y_pos = np.arange(len(class_names))
+                    ax.barh(y_pos, prediction * 100, align='center')
+                    ax.set_yticks(y_pos)
+                    ax.set_yticklabels(class_names)
+                    ax.invert_yaxis()  # Labels read top-to-bottom
+                    ax.set_xlabel('Probability (%)')
+                    ax.set_xlim(0, 100)  # Set x-axis limit to 100%
+
+                    for i, v in enumerate(prediction * 100):
+                        ax.text(v + 1, i, f'{v:.2f}%', color='black', va='center')
+
+                    st.pyplot(fig)
+                    st.markdown('</div>', unsafe_allow_html=True)
+
 
 if __name__ == '__main__':
     main()
 
+    # Add the custom footer
+    st.markdown("""
+    <div class="footer">
+        <p>Enjoy the prediction and thanks for using.</p>
+        <p>Thanks & regards,</p>
+        <p>Sourav</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+
+
+
 
 
 # import streamlit as st
-# import tensorflow as tf
-# import numpy as np
 # from PIL import Image
+# import numpy as np
+# import tensorflow as tf
+# import matplotlib.pyplot as plt
 #
-# # Function to load and preprocess the image
-# def load_and_preprocess_image(image_file):
-#     # Load the image
-#     img = Image.open(image_file)
-#     # Resize the image to match the model input size
-#     img = img.resize((256, 256))
-#     # Convert to numpy array
-#     img_array = np.array(img)
-#     # Expand dimensions to create a batch of size 1
-#     img_array = np.expand_dims(img_array, axis=0)
-#     # Rescale pixel values to [0, 1]
-#     img_array = img_array / 255.0
-#     return img_array
+# # Hiding Streamlit's default menu and footer
+# hide_streamlit_style = """
+# <style>
+# #MainMenu {visibility: hidden;}
+# footer {visibility: hidden;}
+# </style>
+# """
+# st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 #
-# # Load the model with custom objects
-# @st.cache_data
-# def load_model():
-#     model = tf.keras.models.load_model('Potato_Plant_disease_detection_model.h5', compile=False)
-#     model.compile(optimizer='adam',
-#                   loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
-#                   metrics=['accuracy'])
-#     return model
+# st.title('Potato Leaf Disease Prediction')
 #
-# # Define class names (adjust according to your dataset)
-# class_names = ['Healthy', 'Early Blight', 'Late Blight']
 #
-# # Streamlit UI
 # def main():
-#     st.title('Potato Leaf Disease Classifier')
+#     file_uploaded = st.file_uploader('Choose an image...', type='jpg')
+#     if file_uploaded is not None:
+#         image = Image.open(file_uploaded)
+#         st.write("Uploaded Image.")
+#         figure = plt.figure()
+#         plt.imshow(image)
+#         plt.axis('off')
+#         st.pyplot(figure)
+#         result, confidence = predict_class(image)
+#         st.write('Prediction : {}'.format(result))
+#         st.write('Confidence : {}%'.format(confidence))
 #
-#     # File uploader widget
-#     st.set_option('deprecation.showfileUploaderEncoding', False)
-#     uploaded_file = st.file_uploader("Choose an image of a potato leaf...", type="jpg")
 #
-#     if uploaded_file is not None:
-#         # Display the uploaded image
-#         image = Image.open(uploaded_file)
-#         st.image(image, caption='Uploaded potato leaf image', use_column_width=True)
+# def predict_class(image):
+#     with st.spinner('Loading Model...'):
+#         classifier_model = tf.keras.models.load_model('model_v1.h5', compile=False)
 #
-#         # Preprocess the image
-#         img_array = load_and_preprocess_image(uploaded_file)
+#     # Preprocess the image to match the model's input shape
+#     test_image = image.resize((128, 128))  # Ensure this matches the original model's input size
+#     test_image = tf.keras.preprocessing.image.img_to_array(test_image)
+#     test_image = np.expand_dims(test_image, axis=0)
 #
-#         # Load the model
-#         model = load_model()
+#     class_names = ['Early_blight', 'Healthy', 'Late_blight']
 #
-#         # Predict the class probabilities
-#         predictions = model.predict(img_array)
+#     prediction = classifier_model.predict(test_image)
+#     confidence = round(100 * (np.max(prediction[0])), 2)
+#     final_pred = class_names[np.argmax(prediction)]
+#     return final_pred, confidence
 #
-#         # Get the predicted class label
-#         predicted_class = np.argmax(predictions[0])
-#         confidence = np.max(predictions[0]) * 100
 #
-#         st.write(f'Prediction: {class_names[predicted_class]}')
-#         st.write(f'Confidence: {confidence:.2f}%')
+# footer = """
+# <style>
+# a:link , a:visited{
+#     color: white;
+#     background-color: transparent;
+#     text-decoration: None;
+# }
+# a:hover,  a:active {
+#     color: red;
+#     background-color: transparent;
+#     text-decoration: None;
+# }
+# .footer {
+#     position: fixed;
+#     left: 0;
+#     bottom: 0;
+#     width: 100%;
+#     background-color: transparent;
+#     color: black;
+#     text-align: center;
+# }
+# </style>
+# <div class="footer">
+#     <p>Enjoy the prediction and thanks for using.</p>
+#     <p>Thanks and Regards,</p>
+#     <p>Sourav</p>
+# </div>
+# """
+# st.markdown(footer, unsafe_allow_html=True)
 #
-# # Entry point of the Streamlit application
 # if __name__ == '__main__':
 #     main()
+
