@@ -82,20 +82,22 @@ def main():
 
         # Option to use sample image
         sample_images = os.listdir("sample_images")
-        selected_sample = st.selectbox("...or select a sample image:", ["None"] + sample_images)
+        selected_sample = st.selectbox("...or select a sample image:", ["None"] + sample_images, key="selected_sample")
+
+        uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"], key="uploaded_file")
 
         if selected_sample != "None":
             image = load_image(os.path.join("sample_images", selected_sample))
             st.image(image, caption="Selected Sample Image", use_column_width=True)
-        else:
-            uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
-            if uploaded_file is not None:
-                image = load_image(uploaded_file)
-                st.image(image, caption="Uploaded Image", use_column_width=True)
+            st.session_state['image'] = image
+        elif uploaded_file is not None:
+            image = load_image(uploaded_file)
+            st.image(image, caption="Uploaded Image", use_column_width=True)
+            st.session_state['image'] = image
 
         if st.button("Predict"):
-            if 'image' in locals():
-                prediction = predict_class(image)
+            if 'image' in st.session_state:
+                prediction = predict_class(st.session_state['image'])
                 class_names = ['Early_blight', 'Healthy', 'Late_blight']
                 result = class_names[np.argmax(prediction)]
 
@@ -133,9 +135,5 @@ if __name__ == '__main__':
         <p>Sourav</p>
     </div>
     """, unsafe_allow_html=True)
-
-
-
-
 
 
