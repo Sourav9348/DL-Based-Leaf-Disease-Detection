@@ -3,6 +3,7 @@ from PIL import Image
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import os
 
 # Set page config
 st.set_page_config(page_title="Potato Disease Classifier", layout="wide")
@@ -56,6 +57,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+def load_image(image_file):
+    img = Image.open(image_file)
+    return img
+
+
 def predict_class(image):
     classifier_model = tf.keras.models.load_model('model_v1.h5', compile=False)
     test_image = image.resize((128, 128))
@@ -72,16 +78,26 @@ def main():
     col1, col2 = st.columns(2)
 
     with col1:
-        uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
-        if uploaded_file is not None:
-            image = Image.open(uploaded_file)
-            st.image(image, caption="Uploaded Image", use_column_width=True)
+        st.write("Choose an image...")
 
-            if st.button("Predict"):
+        # Option to use sample image
+        sample_images = os.listdir("sample_images")
+        selected_sample = st.selectbox("...or select a sample image:", ["None"] + sample_images)
+
+        if selected_sample != "None":
+            image = load_image(os.path.join("sample_images", selected_sample))
+            st.image(image, caption="Selected Sample Image", use_column_width=True)
+        else:
+            uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+            if uploaded_file is not None:
+                image = load_image(uploaded_file)
+                st.image(image, caption="Uploaded Image", use_column_width=True)
+
+        if st.button("Predict"):
+            if 'image' in locals():
                 prediction = predict_class(image)
                 class_names = ['Early_blight', 'Healthy', 'Late_blight']
                 result = class_names[np.argmax(prediction)]
-                confidence = round(100 * np.max(prediction), 2)
 
                 with col2:
                     st.markdown('<div class="result-container">', unsafe_allow_html=True)
@@ -102,6 +118,8 @@ def main():
 
                     st.pyplot(fig)
                     st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                st.write("Please upload an image or select a sample image first.")
 
 
 if __name__ == '__main__':
@@ -115,7 +133,6 @@ if __name__ == '__main__':
         <p>Sourav</p>
     </div>
     """, unsafe_allow_html=True)
-
 
 
 
